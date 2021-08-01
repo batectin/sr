@@ -1,4 +1,7 @@
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 import numpy as np
 import argparse
 import os
@@ -7,6 +10,7 @@ from models.model_espcn import ESPCN
 from models.model_srcnn import SRCNN
 from models.model_vespcn import VESPCN
 from models.model_vsrnet import VSRnet
+from models.model_rtvsrgan import RTVSRGAN
 from collections import OrderedDict
 
 @enum.unique
@@ -17,7 +21,7 @@ class Padding(enum.Enum):
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='generate c header with model weights and binary model file')
-    parser.add_argument('--model', type=str, default='srcnn', choices=['srcnn', 'espcn', 'vespcn', 'vsrnet'],
+    parser.add_argument('--model', type=str, default='srcnn', choices=['srcnn', 'espcn', 'vespcn','rtvsrgan', 'vsrnet'],
                         help='What model to use for generation')
     parser.add_argument('--output_folder', type=str, default='./',
                         help='where to put generated files')
@@ -96,6 +100,15 @@ def prepare_native_mf_espcn(weights, model_file, scale_factor):
     write_depth_to_space_layer(scale_factor, model_file)
 
 
+def prepare_native_mf_rtvsrgan(weights, model_file, scale_factor):
+    np.array([4], dtype=np.uint32).tofile(model_file)
+    write_conv_layer(weights['rtvsrgan/conv1/kernel:0'], weights['rtvsrgan/conv1/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_conv_layer(weights['rtvsrgan/conv2/kernel:0'], weights['rtvsrgan/conv2/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_conv_layer(weights['rtvsrgan/conv3/kernel:0'], weights['rtvsrgan/conv3/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_conv_layer(weights['rtvsrgan/conv4/kernel:0'], weights['rtvsrgan/conv4/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_depth_to_space_layer(scale_factor, model_file)
+
+
 def prepare_native_mf_vespcn(weights, model_file, scale_factor):
     np.array([6], dtype=np.uint32).tofile(model_file)
     write_conv_layer(weights['vespcn/conv1/kernel:0'], weights['vespcn/conv1/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
@@ -127,6 +140,8 @@ def main():
         model = SRCNN(args)
     elif args.model == 'espcn':
         model = ESPCN(args)
+    elif args.model == 'rtvsrgan':
+        model = RTVSRGAN(args)
     elif args.model == 'vespcn':
         model = VESPCN(args)
     elif args.model == 'vsrnet':
@@ -153,6 +168,8 @@ def main():
                 prepare_native_mf_srcnn(weights, native_mf)
             elif args.model == 'espcn':
                 prepare_native_mf_espcn(weights, native_mf, args.scale_factor)
+            elif args.model == 'rtvsrgan':
+                prepare_native_mf_rtvsrgan(weights, native_mf, args.scale_factor)
             elif args.model == 'vespcn':
                 prepare_native_mf_vespcn(weights, native_mf, args.scale_factor)
             elif args.model == 'vsrnet':

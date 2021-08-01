@@ -51,42 +51,46 @@ def main():
     writer = tf.python_io.TFRecordWriter(os.path.join(args.dataset_folder, 'dataset.tfrecords'))
     hr_image_fns = os.listdir(os.path.join(args.div2k_folder, 'hr'))
     for i in tqdm(range(len(hr_image_fns)), total=len(hr_image_fns), unit='image'):
-        image = cv2.imread(os.path.join(args.div2k_folder, 'hr', hr_image_fns[i]))
-        image_lr = cv2.imread(os.path.join(args.div2k_folder, 'lr', 'X' + str(args.scale_factor),
-                                           hr_image_fns[i].split('.')[0] + 'x' + str(args.scale_factor) +
-                                           '.' + hr_image_fns[i].split('.')[1]))
-        if args.type == 'full':
-            if image.shape[0] > image.shape[1]:
-                image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-                image_lr = cv2.rotate(image_lr, cv2.ROTATE_90_CLOCKWISE)
-            image = image[:args.crop_height, :args.crop_width]
-            image_lr = image_lr[:args.crop_height // args.scale_factor, :args.crop_width // args.scale_factor]
+        try:
+            print(hr_image_fns[i])
+            image = cv2.imread(os.path.join(args.div2k_folder, 'hr', hr_image_fns[i]))
+            image_lr = cv2.imread(os.path.join(args.div2k_folder, 'lr', 'X' + str(args.scale_factor),
+                                            hr_image_fns[i].split('.')[0] + 'x' + str(args.scale_factor) +
+                                            '.' + hr_image_fns[i].split('.')[1]))
+            if args.type == 'full':
+                if image.shape[0] > image.shape[1]:
+                    image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+                    image_lr = cv2.rotate(image_lr, cv2.ROTATE_90_CLOCKWISE)
+                image = image[:args.crop_height, :args.crop_width]
+                image_lr = image_lr[:args.crop_height // args.scale_factor, :args.crop_width // args.scale_factor]
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)[:, :, 0]
+            image_lr = cv2.cvtColor(image_lr, cv2.COLOR_BGR2YUV)[:, :, 0]
+            if args.type == 'blocks':
+                height = image_lr.shape[0]
+                width = image_lr.shape[1]
+                for y in range(height // args.stride - 1):
+                    for x in range(width // args.stride - 1):
+                        lr_block = image_lr[y * args.stride:y * args.stride + args.block_size,
+                                            x * args.stride:x * args.stride + args.block_size]
+                        hr_block = image[
+                                y * args.stride * args.scale_factor:(y * args.stride + args.block_size) * args.scale_factor,
+                                x * args.stride * args.scale_factor:(x * args.stride + args.block_size) * args.scale_factor]
+                        feature = {'hr': bytes_feature(hr_block.tobytes())}
+                        for i in range(2 * args.temporal_radius + 1):
+                            feature['lr' + str(i)] = bytes_feature(lr_block.tobytes())
+                        example = tf.train.Example(features=tf.train.Features(feature=feature))
+                        writer.write(example.SerializeToString())
+                        examples_num += 1
+            elif args.type == 'full':
+                feature = {'hr': bytes_feature(image.tobytes())}
+                for i in range(2 * args.temporal_radius + 1):
+                    feature['lr' + str(i)] = bytes_feature(image_lr.tobytes())
+                example = tf.train.Example(features=tf.train.Features(feature=feature))
+                writer.write(example.SerializeToString())
+                examples_num += 1
+        except cv2.error:
+            i-=1
 
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)[:, :, 0]
-        image_lr = cv2.cvtColor(image_lr, cv2.COLOR_BGR2YUV)[:, :, 0]
-        if args.type == 'blocks':
-            height = image_lr.shape[0]
-            width = image_lr.shape[1]
-            for y in range(height // args.stride - 1):
-                for x in range(width // args.stride - 1):
-                    lr_block = image_lr[y * args.stride:y * args.stride + args.block_size,
-                                        x * args.stride:x * args.stride + args.block_size]
-                    hr_block = image[
-                            y * args.stride * args.scale_factor:(y * args.stride + args.block_size) * args.scale_factor,
-                            x * args.stride * args.scale_factor:(x * args.stride + args.block_size) * args.scale_factor]
-                    feature = {'hr': bytes_feature(hr_block.tostring())}
-                    for i in range(2 * args.temporal_radius + 1):
-                        feature['lr' + str(i)] = bytes_feature(lr_block.tostring())
-                    example = tf.train.Example(features=tf.train.Features(feature=feature))
-                    writer.write(example.SerializeToString())
-                    examples_num += 1
-        elif args.type == 'full':
-            feature = {'hr': bytes_feature(image.tostring())}
-            for i in range(2 * args.temporal_radius + 1):
-                feature['lr' + str(i)] = bytes_feature(image_lr.tostring())
-            example = tf.train.Example(features=tf.train.Features(feature=feature))
-            writer.write(example.SerializeToString())
-            examples_num += 1
 
     print("Dataset prepared. Total number of examples: " + str(examples_num))
     with open(os.path.join(args.dataset_folder, 'dataset_info.txt'), 'w') as dataset_info:

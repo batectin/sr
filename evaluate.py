@@ -1,4 +1,6 @@
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import numpy as np
 import argparse
 import os
@@ -8,6 +10,7 @@ from models.model_espcn import ESPCN
 from models.model_srcnn import SRCNN
 from models.model_vespcn import VESPCN
 from models.model_vsrnet import VSRnet
+from models.model_rtvsrgan import RTVSRGAN
 
 BATCH_SIZE = 4
 DATASET_PATH = 'dataset.tfrecords'
@@ -19,7 +22,7 @@ STEPS_PER_LOG = 5
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='evaluate one of the models for image and video super-resolution')
-    parser.add_argument('--model', type=str, default='srcnn', choices=['srcnn', 'espcn', 'vespcn', 'vsrnet'],
+    parser.add_argument('--model', type=str, default='srcnn', choices=['srcnn', 'espcn','rtvsrgan', 'vespcn', 'vsrnet'],
                         help='What model to evaluate')
     parser.add_argument('--batch_size', type=int, default=BATCH_SIZE,
                         help='Number of images in batch')
@@ -48,6 +51,8 @@ def main():
         model = SRCNN(args)
     elif args.model == 'espcn':
         model = ESPCN(args)
+    elif args.model == 'rtvsrgan':
+        model = RTVSRGAN(args)
     elif args.model == 'vespcn':
         model = VESPCN(args)
     elif args.model == 'vsrnet':

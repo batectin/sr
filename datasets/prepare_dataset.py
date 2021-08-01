@@ -137,19 +137,19 @@ def process_video(video_path, scd, writer, args):
                                             x * args.stride * args.scale_factor:
                                             (x * args.stride + args.block_size) * args.scale_factor]
                         if np.std(hr_block) > args.block_min_std:
-                            feature['hr'] = bytes_feature(hr_block.tostring())
+                            feature['hr'] = bytes_feature(hr_block.tobytes())
                             for k in range(len(frames_lr)):
                                 lr_block = frames_lr[k][y * args.stride:y * args.stride + args.block_size,
                                                         x * args.stride:x * args.stride + args.block_size]
-                                feature['lr' + str(k)] = bytes_feature(lr_block.tostring())
+                                feature['lr' + str(k)] = bytes_feature(lr_block.tobytes())
                             example = tf.train.Example(features=tf.train.Features(feature=feature))
                             writer.write(example.SerializeToString())
                             examples_num += 1
             elif args.type == 'full':
                 feature = {}
                 for k in range(len(frames_lr)):
-                    feature['lr' + str(k)] = bytes_feature(frames_lr[k].tostring())
-                feature['hr'] = bytes_feature(frame_hr.tostring())
+                    feature['lr' + str(k)] = bytes_feature(frames_lr[k].tobytes())
+                feature['hr'] = bytes_feature(frame_hr.tobytes())
                 example = tf.train.Example(features=tf.train.Features(feature=feature))
                 writer.write(example.SerializeToString())
                 examples_num += 1
