@@ -5,7 +5,7 @@ tf.disable_v2_behavior()
 from .model import Model
 
 
-class RTVSRGAN(Model):
+class SRESNETP(Model):
     def __init__(self, args):
         super().__init__(args)
         self._prediction_offset = self._scale_factor * 4
@@ -31,29 +31,42 @@ class RTVSRGAN(Model):
             if not self._using_dataset:
                 lr_batch = tf.pad(lr_batch, [[0, 0], [4, 4], [4, 4], [0, 0]], 'SYMMETRIC')
             print("lr_batch: {}".format(lr_batch.shape))
-            net = tf.layers.conv2d(lr_batch, 32, 3, padding='same',strides=1, name='conv1',
-                                   kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., mode='fan_in', distribution='normal', seed=None))
+            #[?, 36, 36, 64]
+            net = tf.keras.layers.Conv2D( 64, 3, padding='same',strides=(1, 1), name='conv1',
+                                   kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., 
+                                   mode='fan_in', distribution='truncated_normal', seed=None))(lr_batch)
             net = tf.keras.layers.LeakyReLU(alpha=0.2)(net)
             net1 = net
             print("net1: {}".format(net1.shape))
-            net = tf.layers.conv2d(net, 32, 3, padding='same',strides=1, name='conv2',
-                                   kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., mode='fan_in', distribution='normal', seed=None))
+            #[?, 36, 36, 64]
+            net = tf.keras.layers.Conv2D(64, 3, padding='same',strides=(1, 1), name='conv2',
+                                   kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., 
+                                   mode='fan_in', distribution='truncated_normal', seed=None))(net)
             net = tf.keras.layers.LeakyReLU(alpha=0.2)(net)
             net2 = net
-            print("net2: {}".format(net2.shape))
-            net = tf.concat([net1, net2],axis=3)
-            print("net3: {}".format(net.shape))
+            print("net2: {}".format(net2.shape)) 
+            #[?, 36, 36, 128]
+            net = tf.concat([net1, net],axis=3)
 
-            net = tf.layers.conv2d(net, 32, 3, padding='same',strides=1, name='conv3',
-                                   kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., mode='fan_in', distribution='normal', seed=None))
+            #[?, 36, 36, 64]
+            net = tf.keras.layers.Conv2D(64, 3, padding='same',strides=(1, 1), name='conv3',
+                                   kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., 
+                                   mode='fan_in', distribution='truncated_normal', seed=None))(net)
             net = tf.keras.layers.LeakyReLU(alpha=0.2)(net)
-            net = tf.keras.layers.Lambda(lambda x: x * 0.2)(net)
+            net3 = net
+            print("net3: {}".format(net3.shape))
             
-            net = tf.concat([net1, net2,net],axis=3)
+            net1 = tf.keras.layers.Lambda(lambda x: x * 0.2)(net1)
+            net2 = tf.keras.layers.Lambda(lambda x: x * 0.2)(net2)
+            net3 = tf.keras.layers.Lambda(lambda x: x * 0.6)(net3)
+            
+            #net = tf.concat([net1, net2,net3],axis=3)
+            net = tf.keras.layers.add([net1, net2,net3])
             print("net4: {}".format(net.shape))
 
-            net = tf.layers.conv2d(net, self._scale_factor ** 2, 3, activation=tf.nn.tanh, padding='same',strides=1,
-                                   name='conv4', kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., mode='fan_in', distribution='normal', seed=None))
+            net = tf.keras.layers.Conv2D( self._scale_factor ** 2, 3, activation=tf.nn.tanh, padding='same',strides=(1, 1),
+                                   name='conv4', kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., 
+                                   mode='fan_in', distribution='truncated_normal', seed=None))(net)
             predicted_batch = tf.depth_to_space(net, self._scale_factor, name='prediction')
             print("predicted_batch: {}".format(predicted_batch.shape))                                            
 
@@ -72,38 +85,49 @@ class RTVSRGAN(Model):
                              max_outputs=self._save_num)
             tf.summary.image('High_resolution_prediction', predicted_batch, max_outputs=self._save_num)
 
-        return predicted_batch
+        return predicted_batch[:,self._prediction_offset:-self._prediction_offset,self._prediction_offset:-self._prediction_offset]
 
     def get_loss(self, data_batch, predicted_batch):
         print("data_batch: {}".format(data_batch[1].shape))
         print("predicted_batch: {}".format(predicted_batch.shape))
         loss = tf.losses.mean_squared_error(
-            data_batch[1],
+            data_batch[1][:,
+                          self._prediction_offset:-self._prediction_offset,
+                          self._prediction_offset:-self._prediction_offset],
             predicted_batch)
 
         tf.summary.scalar('MSE', loss)
         tf.summary.scalar('PSNR', tf.reduce_mean(tf.image.psnr(
-                                                     data_batch[1],
+                                                     data_batch[1][:,
+                                                                   self._prediction_offset:-self._prediction_offset,
+                                                                   self._prediction_offset:-self._prediction_offset],
                                                      predicted_batch,
                                                      max_val=1.0)))
         tf.summary.scalar('SSIM', tf.reduce_mean(tf.image.ssim(
-                                                     data_batch[1],
+                                                     data_batch[1][:,
+                                                                   self._prediction_offset:-self._prediction_offset,
+                                                                   self._prediction_offset:-self._prediction_offset],
                                                      predicted_batch,
                                                      max_val=1.0)))
 
         return loss
 
     def calculate_metrics(self, data_batch, predicted_batch):
-        diff = data_batch[1] - predicted_batch
+        diff = data_batch[1][:, self._prediction_offset:-self._prediction_offset,
+               self._prediction_offset:-self._prediction_offset] - predicted_batch
         diff_sqr = tf.square(diff)
 
         mse = ('MSE', tf.reduce_mean(diff_sqr, axis=[1, 2, 3]))
         psnr = ('PSNR', tf.squeeze(tf.image.psnr(
-                                       data_batch[1],
+                                       data_batch[1][:,
+                                                     self._prediction_offset:-self._prediction_offset,
+                                                     self._prediction_offset:-self._prediction_offset],
                                        predicted_batch,
                                        max_val=1.0)))
         ssim = ('SSIM', tf.squeeze(tf.image.ssim(
-                                       data_batch[1],
+                                       data_batch[1][:,
+                                                     self._prediction_offset:-self._prediction_offset,
+                                                     self._prediction_offset:-self._prediction_offset],
                                        predicted_batch,
                                        max_val=1.0)))
 

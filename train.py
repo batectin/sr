@@ -9,7 +9,8 @@ from models.model_espcn import ESPCN
 from models.model_srcnn import SRCNN
 from models.model_vespcn import VESPCN
 from models.model_vsrnet import VSRnet
-from models.model_rtvsrgan import RTVSRGAN
+from models.model_sresnetp import SRESNETP
+from models.model_sresnet import SRESNET
 
 
 MODEL='srcnn'
@@ -31,7 +32,7 @@ LOGDIR = 'training_logdir/default'
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='train one of the models for image and video super-resolution')
-    parser.add_argument('--model', type=str, default=MODEL, choices=['srcnn', 'espcn','rtvsrgan', 'vespcn', 'vsrnet'],
+    parser.add_argument('--model', type=str, default=MODEL, choices=['srcnn', 'espcn','sresnetp', 'vespcn', 'vsrnet', 'sresnet'],
                         help='What model to train')
     parser.add_argument('--batch_size', type=int, default=BATCH_SIZE,
                         help='Number of images in batch')
@@ -80,8 +81,10 @@ def main():
         model = SRCNN(args)
     elif args.model == 'espcn':
         model = ESPCN(args)
-    elif args.model == 'rtvsrgan':
-        model = RTVSRGAN(args)
+    elif args.model == 'sresnet':
+        model = SRESNET(args)
+    elif args.model == 'sresnetp':
+        model = SRESNETP(args)
     elif args.model == 'vespcn':
         model = VESPCN(args)
     elif args.model == 'vsrnet':
