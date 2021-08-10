@@ -27,43 +27,39 @@ class SRESNETP(Model):
     def load_model(self, data_batch):
         lr_batch = data_batch[0]
 
-        with tf.variable_scope('sresnetp'):
+        with tf.variable_scope('rtvsrgan'):
             if not self._using_dataset:
                 lr_batch = tf.pad(lr_batch, [[0, 0], [4, 4], [4, 4], [0, 0]], 'SYMMETRIC')
             print("lr_batch: {}".format(lr_batch.shape))
-            
-            #[?, 36, 36, 32]
-            net = tf.keras.layers.Conv2D( 32, 3, padding='same',strides=(1, 1), name='conv1',
+            #[?, 36, 36, 64]
+            net = tf.keras.layers.Conv2D( 64, 3, padding='same',strides=(1, 1), name='conv1',
                                    kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., 
                                    mode='fan_in', distribution='truncated_normal', seed=None))(lr_batch)
             net = tf.keras.layers.LeakyReLU(alpha=0.2)(net)
             net1 = net
             print("net1: {}".format(net1.shape))
-            
-            #[?, 36, 36, 32]
-            net = tf.keras.layers.Conv2D(32, 3, padding='same',strides=(1, 1), name='conv2',
+            #[?, 36, 36, 64]
+            net = tf.keras.layers.Conv2D(64, 3, padding='same',strides=(1, 1), name='conv2',
                                    kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., 
                                    mode='fan_in', distribution='truncated_normal', seed=None))(net)
             net = tf.keras.layers.LeakyReLU(alpha=0.2)(net)
             net2 = net
             print("net2: {}".format(net2.shape)) 
+            #[?, 36, 36, 128]
+            net = tf.concat([net1, net],axis=3)
+
             #[?, 36, 36, 64]
-            #net = tf.concat([net1, net],axis=3)
-            tf.keras.layers.add([net1, net2])
-
-
-            #[?, 36, 36, 32]
-            net = tf.keras.layers.Conv2D(32, 3, padding='same',strides=(1, 1), name='conv3',
+            net = tf.keras.layers.Conv2D(64, 3, padding='same',strides=(1, 1), name='conv3',
                                    kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1., 
                                    mode='fan_in', distribution='truncated_normal', seed=None))(net)
             net = tf.keras.layers.LeakyReLU(alpha=0.2)(net)
             net3 = net
             print("net3: {}".format(net3.shape))
-            #net1 = tf.keras.layers.Lambda(lambda x: x * 0.6)(net1)
-            #net2 = tf.keras.layers.Lambda(lambda x: x * 0.3)(net2)
-            #net3 = tf.keras.layers.Lambda(lambda x: x * 0.1)(net3)
             
-            #[?, 36, 36, 96]
+            net1 = tf.keras.layers.Lambda(lambda x: x * 0.2)(net1)
+            net2 = tf.keras.layers.Lambda(lambda x: x * 0.2)(net2)
+            net3 = tf.keras.layers.Lambda(lambda x: x * 0.6)(net3)
+            
             net = tf.concat([net1, net2,net3],axis=3)
             # net = tf.keras.layers.add([net1, net2,net3])
             print("net4: {}".format(net.shape))
@@ -74,8 +70,8 @@ class SRESNETP(Model):
             predicted_batch = tf.depth_to_space(net, self._scale_factor, name='prediction')
             print("predicted_batch: {}".format(predicted_batch.shape))                                            
 
-        sresnetp_variables = tf.trainable_variables(scope='sresnetp')
-        for variable in sresnetp_variables:
+        rtvsrgan_variables = tf.trainable_variables(scope='rtvsrgan')
+        for variable in rtvsrgan_variables:
             if 'conv4' in variable.name:
                 self.lr_multipliers[variable.name] = 0.1
             else:

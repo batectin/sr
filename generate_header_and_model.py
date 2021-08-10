@@ -102,10 +102,10 @@ def prepare_native_mf_espcn(weights, model_file, scale_factor):
 
 def prepare_native_mf_sresnetp(weights, model_file, scale_factor):
     np.array([4], dtype=np.uint32).tofile(model_file)
-    write_conv_layer(weights['rtvsrgan/conv1/kernel:0'], weights['rtvsrgan/conv1/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
-    write_conv_layer(weights['rtvsrgan/conv2/kernel:0'], weights['rtvsrgan/conv2/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
-    write_conv_layer(weights['rtvsrgan/conv3/kernel:0'], weights['rtvsrgan/conv3/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
-    write_conv_layer(weights['rtvsrgan/conv4/kernel:0'], weights['rtvsrgan/conv4/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_conv_layer(weights['sresnetp/conv1/kernel:0'], weights['sresnetp/conv1/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_conv_layer(weights['sresnetp/conv2/kernel:0'], weights['sresnetp/conv2/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_conv_layer(weights['sresnetp/conv3/kernel:0'], weights['sresnetp/conv3/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
+    write_conv_layer(weights['sresnetp/conv4/kernel:0'], weights['sresnetp/conv4/bias:0'], 1, Padding.Same_clamp_to_edge, 0, model_file)
     write_depth_to_space_layer(scale_factor, model_file)
 
 

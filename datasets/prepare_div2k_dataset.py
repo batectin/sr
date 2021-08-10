@@ -2,8 +2,9 @@ import os
 import argparse
 from tqdm import tqdm
 import cv2
-import tensorflow as tf
-
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 def bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -35,7 +36,16 @@ def get_arguments():
 
     return parser.parse_args()
 
-
+def compression_artefacts(img=None,qf=10,format='jpg'):
+    if format == 'png':
+        encode_param = [int(cv2.IMWRITE_PNG_COMPRESSION), qf]
+        _, encimg = cv2.imencode('.png', img, encode_param)
+    if format == 'jpg': 
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), qf]
+        _, encimg = cv2.imencode('.jpg', img, encode_param)
+    decimg = cv2.imdecode(encimg,cv2.IMREAD_COLOR)      
+    return decimg
+    
 def main():
     args = get_arguments()
 
@@ -57,6 +67,7 @@ def main():
             image_lr = cv2.imread(os.path.join(args.div2k_folder, 'lr', 'X' + str(args.scale_factor),
                                             hr_image_fns[i].split('.')[0] + 'x' + str(args.scale_factor) +
                                             '.' + hr_image_fns[i].split('.')[1]))
+            # image_lr = compression_artefacts(img=image_lr,qf=30)
             if args.type == 'full':
                 if image.shape[0] > image.shape[1]:
                     image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)

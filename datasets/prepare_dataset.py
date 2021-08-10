@@ -4,7 +4,9 @@ from tqdm import tqdm
 import cv2
 import numpy as np
 import json
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from scipy.misc import imresize
 
 

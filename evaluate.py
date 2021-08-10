@@ -106,6 +106,7 @@ def main():
                 logged_iterations += 1
 
         mean_metrics = [(metric[0], np.mean(metric[1])) for metric in metrics_results]
+        print("Examples_num: {}".format(model.dataset.examples_num))
         mean_metrics.append(("Time", time_res / model.dataset.examples_num))
         metric_summaries = []
         for metric in mean_metrics:

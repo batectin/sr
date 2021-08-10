@@ -8,6 +8,12 @@ This repo contains TensorFlow implementations of following image and video super
 
 This repo is a part of GSoC project for super resolution filter in ffmpeg.
 
+## Prepare Dataset
+
+python3 datasets/prepare_div2k_dataset.py --div2k_folder=../teste/dataset/train --dataset_folder=datasets/train_football --type=blocks --temporal_radius=1 --block_size=36 --stride=36
+
+python3 datasets/prepare_div2k_dataset.py --div2k_folder=../teste/dataset/test --dataset_folder=datasets/test_football --type=full --temporal_radius=1
+
 ## Model training
 
 To train provided models you should prepare datasets first using generate_datasets.sh script. It will download several videos (from https://www.harmonicinc.com/4k-demo-footage-download/) to build video dataset for video models and DIV2K dataset (https://data.vision.ee.ethz.ch/cvl/DIV2K/) for image models. After that either of the train scripts for each model can be used to train them. 
