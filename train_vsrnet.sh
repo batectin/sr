@@ -4,8 +4,14 @@ source train_eval.sh
 
 TRAINING_LOGDIR=logdir/vsrnet_batch_32_lr_1e-3_decay_adam/train
 EVAL_LOGDIR=logdir/vsrnet_batch_32_lr_1e-3_decay_adam/test
-TRAINING_DATASET_PATH=datasets/train_merged/dataset.tfrecords
-TRAINING_DATASET_INFO_PATH=datasets/train_merged/dataset_info.txt
+
+#TRAINING_DATASET_PATH=datasets/train_merged/dataset.tfrecords
+#TRAINING_DATASET_INFO_PATH=datasets/train_merged/dataset_info.txt
+
+TRAINING_DATASET_PATH=datasets/train_football/dataset.tfrecords
+TRAINING_DATASET_INFO_PATH=datasets/train_football/dataset_info.txt
+TESTING_DATASET_PATH=datasets/test_football/dataset.tfrecords
+TESTING_DATASET_INFO_PATH=datasets/test_football/dataset_info.txt
 
 MODEL=vsrnet
 BATCH_SIZE=32
@@ -20,4 +26,4 @@ NUM_EPOCHS=50
 EPOCHS_PER_EVAL=1
 SHUFFLE_BUFFER_SIZE=100000
 
-train_eval $NUM_EPOCHS $EPOCHS_PER_EVAL 0
+train_eval $NUM_EPOCHS $EPOCHS_PER_EVAL 1

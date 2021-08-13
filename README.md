@@ -10,9 +10,9 @@ This repo is a part of GSoC project for super resolution filter in ffmpeg.
 
 ## Prepare Dataset
 
-python3 datasets/prepare_div2k_dataset.py --div2k_folder=../teste/dataset/train --dataset_folder=datasets/train_football --type=blocks --temporal_radius=1 --block_size=36 --stride=36
+python3 datasets/prepare_div2k_dataset.py --div2k_folder=../data/dataset/train --dataset_folder=datasets/train_football-qp17 --type=blocks --temporal_radius=1 --block_size=36 --stride=36
 
-python3 datasets/prepare_div2k_dataset.py --div2k_folder=../teste/dataset/test --dataset_folder=datasets/test_football --type=full --temporal_radius=1
+python3 datasets/prepare_div2k_dataset.py --div2k_folder=../data/dataset/test --dataset_folder=datasets/test_football-qp17 --type=full --crop_height=1080 --crop_width=1920 --temporal_radius=1
 
 ## Model training
 
